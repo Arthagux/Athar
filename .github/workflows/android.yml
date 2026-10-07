@@ -1,5 +1,5 @@
 name: Build ATHAR Android APK
-# local-ai build revision 6
+# local-ai build revision 7
 on:
   push:
     branches: [main]
@@ -35,7 +35,7 @@ jobs:
           s = s.replace("alias(libs.plugins.android.library)", 'id("com.android.library")')
           s = s.replace("alias(libs.plugins.jetbrains.kotlin.android)", 'id("org.jetbrains.kotlin.android")')
           s = s.replace("minSdk = 33", "minSdk = 30")
-          s = s.replace('abiFilters += listOf("arm64-v8a", "x86_64")', 'abiFilters += listOf("armeabi-v7a", "arm64-v8a")')
+          s = s.replace('abiFilters += listOf("arm64-v8a", "x86_64")', 'abiFilters += listOf("arm64-v8a")')
           s = s.replace("implementation(libs.androidx.core.ktx)", 'implementation("androidx.core:core-ktx:1.17.0")')
           s = s.replace("implementation(libs.androidx.datastore.preferences)", 'implementation("androidx.datastore:datastore-preferences:1.1.7")')
           s = s.replace("testImplementation(libs.junit)", 'testImplementation("junit:junit:4.13.2")')
@@ -47,10 +47,14 @@ jobs:
           gradle-version: "8.14.3"
       - name: Build install-safe Android 11 APK
         run: gradle :app:assembleDebug --stacktrace
+      - name: Verify Android 11 APK
+        run: |
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging app/build/outputs/apk/debug/app-debug.apk | grep -E "package:|sdkVersion:|native-code:"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs app/build/outputs/apk/debug/app-debug.apk
       - name: Rename APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk ATHAR-v0.3.2-android11-install-fix.apk
+        run: cp app/build/outputs/apk/debug/app-debug.apk ATHAR-v0.3.2-android11-arm64.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: ATHAR-v0.3.2-android11-install-fix
-          path: ATHAR-v0.3.2-android11-install-fix.apk
+          name: ATHAR-v0.3.2-android11-arm64
+          path: ATHAR-v0.3.2-android11-arm64.apk
           if-no-files-found: error
