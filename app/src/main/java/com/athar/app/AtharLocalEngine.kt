@@ -1,21 +1,42 @@
 package com.athar.app
 
-import kotlin.concurrent.thread
+import android.content.Context
+import com.arm.aichat.AiChat
+import com.arm.aichat.InferenceEngine
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 
-/**
- * Punto único de entrada del modelo local.
- * La v0.2 elimina por completo la dependencia del PC/servidor.
- * El siguiente paso conecta aquí el runtime nativo GGUF/llama.cpp.
- */
-class AtharLocalEngine {
-    val isReady: Boolean = true
+class AtharLocalEngine(private val context: Context) {
+    private val engine: InferenceEngine = AiChat.getInferenceEngine(context)
+    private val scope = CoroutineScope(Dispatchers.IO + Job())
 
-    fun generate(prompt: String, onResult: (String) -> Unit) {
-        thread {
-            onResult(
-                "El núcleo local de ATHAR está activo en este teléfono. " +
-                "Falta cargar el modelo GGUF para generar respuestas reales. Mensaje recibido: $prompt"
-            )
+    @Volatile var isReady: Boolean = false
+        private set
+
+    suspend fun loadModel(model: File) {
+        isReady = false
+        engine.loadModel(model.absolutePath)
+        engine.setSystemPrompt(
+            "Eres ATHAR, un asistente de inteligencia artificial que se ejecuta localmente en el teléfono. " +
+            "Responde de manera clara, útil y razonada. Tu idioma principal con este usuario es español."
+        )
+        isReady = true
+    }
+
+    fun generate(prompt: String, onToken: (String) -> Unit, onDone: () -> Unit, onError: (String) -> Unit) {
+        scope.launch {
+            engine.sendUserPrompt(prompt)
+                .catch { onError(it.message ?: "Error de inferencia local") }
+                .collect { token -> withContext(Dispatchers.Main) { onToken(token) } }
+            withContext(Dispatchers.Main) { onDone() }
         }
     }
+
+    fun destroy() = engine.destroy()
 }
