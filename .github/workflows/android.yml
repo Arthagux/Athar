@@ -1,5 +1,5 @@
 name: Build ATHAR Android APK
-# local-ai build revision 8
+# local-ai build revision 9
 on:
   push:
     branches: [main]
@@ -56,5 +56,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: ATHAR-v0.3.3-android11-miui
-          path: ATHAR-v0.3.2-android11-arm64.apk
+          path: ATHAR-v0.3.3-android11-miui.apk
           if-no-files-found: error
