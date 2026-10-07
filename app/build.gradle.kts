@@ -7,11 +7,11 @@ android {
     namespace = "com.athar.app"
     compileSdk = 36
     defaultConfig {
-        applicationId = "com.athar.app.v042"
+        applicationId = "com.athar.app.v043"
         minSdk = 30
         targetSdk = 30
-        versionCode = 8
-        versionName = "0.4.2"
+        versionCode = 9
+        versionName = "0.4.3"
     }
     signingConfigs {
         getByName("debug") {
@@ -19,9 +19,6 @@ android {
             enableV2Signing = true
             enableV3Signing = true
         }
-    }
-    androidResources {
-        noCompress += "gguf"
     }
     packaging {
         jniLibs {
