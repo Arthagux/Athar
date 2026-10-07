@@ -10,8 +10,8 @@ android {
         applicationId = "com.athar.app.v04"
         minSdk = 30
         targetSdk = 30
-        versionCode = 6
-        versionName = "0.4.0"
+        versionCode = 7
+        versionName = "0.4.1"
     }
     signingConfigs {
         getByName("debug") {
@@ -19,6 +19,9 @@ android {
             enableV2Signing = true
             enableV3Signing = true
         }
+    }
+    androidResources {
+        noCompress += "gguf"
     }
     packaging {
         jniLibs {
