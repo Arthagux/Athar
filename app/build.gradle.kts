@@ -7,11 +7,28 @@ android {
     namespace = "com.athar.app"
     compileSdk = 36
     defaultConfig {
-        applicationId = "com.athar.app.android11"
+        applicationId = "com.athar.app.android11compat"
         minSdk = 30
-        targetSdk = 36
-        versionCode = 4
-        versionName = "0.3.2"
+        targetSdk = 30
+        versionCode = 5
+        versionName = "0.3.3"
+    }
+    signingConfigs {
+        getByName("debug") {
+            enableV1Signing = true
+            enableV2Signing = true
+            enableV3Signing = true
+        }
+    }
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+            excludes += setOf(
+                "**/armeabi-v7a/**",
+                "**/x86/**",
+                "**/x86_64/**"
+            )
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
