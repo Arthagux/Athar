@@ -1,4 +1,4 @@
-name: Build ATHAR Android APK
+name: Build ATHAR Android APK\n# local-ai build revision 3
 on:
   push:
     branches: [main]
