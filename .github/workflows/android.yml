@@ -25,6 +25,20 @@ jobs:
         run: |
           mkdir -p vendor
           git clone --depth 1 https://github.com/ggml-org/llama.cpp.git vendor/llama.cpp
+      - name: Adapt llama.cpp library to ATHAR build
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("vendor/llama.cpp/examples/llama.android/lib/build.gradle.kts")
+          s = p.read_text()
+          s = s.replace("alias(libs.plugins.android.library)", 'id("com.android.library")')
+          s = s.replace("alias(libs.plugins.jetbrains.kotlin.android)", 'id("org.jetbrains.kotlin.android")')
+          s = s.replace("implementation(libs.androidx.core.ktx)", 'implementation("androidx.core:core-ktx:1.17.0")')
+          s = s.replace("implementation(libs.androidx.datastore.preferences)", 'implementation("androidx.datastore:datastore-preferences:1.1.7")')
+          s = s.replace("testImplementation(libs.junit)", 'testImplementation("junit:junit:4.13.2")')
+          s = s.replace("androidTestImplementation(libs.androidx.junit)", 'androidTestImplementation("androidx.test.ext:junit:1.3.0")')
+          p.write_text(s)
+          PY
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.14.3"
