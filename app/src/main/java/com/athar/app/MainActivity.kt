@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 
 data class ChatLine(val author: String, val text: String)
 
@@ -27,28 +28,18 @@ fun AtharScreen() {
     var busy by remember { mutableStateOf(false) }
     val messages = remember { mutableStateListOf<ChatLine>() }
     val engine = remember { AtharLocalEngine() }
+    val scope = rememberCoroutineScope()
 
     Scaffold(topBar = { TopAppBar(title = { Text("ATHAR v0.2 • IA local") }) }) { pad ->
         Column(Modifier.padding(pad).padding(16.dp).fillMaxSize()) {
-            Text(
-                if (engine.isReady) "Motor local listo" else "Preparando motor local…",
-                style = MaterialTheme.typography.labelLarge
-            )
-            Text(
-                "Internet se usa solo como herramienta para información externa.",
-                style = MaterialTheme.typography.bodySmall
-            )
+            Text(if (engine.isReady) "Motor local listo" else "Preparando motor local…", style = MaterialTheme.typography.labelLarge)
+            Text("Internet se usa solo como herramienta para información externa.", style = MaterialTheme.typography.bodySmall)
             Spacer(Modifier.height(8.dp))
             LazyColumn(Modifier.weight(1f).fillMaxWidth()) {
                 items(messages) { Text("${it.author}: ${it.text}", Modifier.padding(vertical = 6.dp)) }
             }
             if (busy) Text("ATHAR está pensando…")
-            OutlinedTextField(
-                value = message,
-                onValueChange = { message = it },
-                label = { Text("Mensaje") },
-                modifier = Modifier.fillMaxWidth()
-            )
+            OutlinedTextField(value = message, onValueChange = { message = it }, label = { Text("Mensaje") }, modifier = Modifier.fillMaxWidth())
             Button(
                 enabled = !busy && message.isNotBlank() && engine.isReady,
                 modifier = Modifier.fillMaxWidth(),
@@ -58,7 +49,7 @@ fun AtharScreen() {
                     messages.add(ChatLine("Tú", sent))
                     busy = true
                     engine.generate(sent) { answer ->
-                        runOnUiThread {
+                        scope.launch {
                             messages.add(ChatLine("ATHAR", answer))
                             busy = false
                         }
