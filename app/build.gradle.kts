@@ -7,11 +7,11 @@ android {
     namespace = "com.athar.app"
     compileSdk = 36
     defaultConfig {
-        applicationId = "com.athar.app.v04"
+        applicationId = "com.athar.app.v042"
         minSdk = 30
         targetSdk = 30
-        versionCode = 7
-        versionName = "0.4.1"
+        versionCode = 8
+        versionName = "0.4.2"
     }
     signingConfigs {
         getByName("debug") {
