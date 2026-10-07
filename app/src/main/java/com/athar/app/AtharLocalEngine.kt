@@ -29,12 +29,28 @@ class AtharLocalEngine(private val context: Context) {
         isReady = true
     }
 
-    fun generate(prompt: String, onToken: (String) -> Unit, onDone: () -> Unit, onError: (String) -> Unit) {
+    fun generate(
+        prompt: String,
+        onToken: (String) -> Unit,
+        onDone: () -> Unit,
+        onError: (String) -> Unit
+    ) {
         scope.launch {
+            var failed = false
             engine.sendUserPrompt(prompt)
-                .catch { onError(it.message ?: "Error de inferencia local") }
-                .collect { token -> withContext(Dispatchers.Main) { onToken(token) } }
-            withContext(Dispatchers.Main) { onDone() }
+                .catch {
+                    failed = true
+                    withContext(Dispatchers.Main) {
+                        onError(it.message ?: "Error de inferencia local")
+                    }
+                }
+                .collect { token ->
+                    withContext(Dispatchers.Main) { onToken(token) }
+                }
+
+            if (!failed) {
+                withContext(Dispatchers.Main) { onDone() }
+            }
         }
     }
 
