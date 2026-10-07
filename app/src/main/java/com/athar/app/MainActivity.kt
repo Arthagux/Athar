@@ -17,14 +17,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.net.HttpURLConnection
-import java.net.URL
 
 data class ChatLine(val author: String, var text: String)
 
-private const val DEFAULT_MODEL_FILE = "qwen2.5-1.5b-instruct-q4_k_m.gguf"
-private const val DEFAULT_MODEL_URL =
-    "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf?download=true"
+private const val BUNDLED_MODEL_ASSET = "athar-model.gguf"
+private const val BUNDLED_MODEL_FILE = "athar-model.gguf"
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,42 +31,17 @@ class MainActivity : ComponentActivity() {
 }
 
 private fun modelFile(context: android.content.Context): File {
-    return File(File(context.filesDir, "models").apply { mkdirs() }, DEFAULT_MODEL_FILE)
+    return File(File(context.filesDir, "models").apply { mkdirs() }, BUNDLED_MODEL_FILE)
 }
 
-private fun downloadModel(
-    target: File,
-    onProgress: (Int) -> Unit
-) {
-    val tmp = File(target.parentFile, target.name + ".part")
-    var conn: HttpURLConnection? = null
-    try {
-        conn = (URL(DEFAULT_MODEL_URL).openConnection() as HttpURLConnection).apply {
-            instanceFollowRedirects = true
-            connectTimeout = 30_000
-            readTimeout = 30_000
-            requestMethod = "GET"
-            setRequestProperty("User-Agent", "ATHAR-Android/0.4")
-        }
-        conn.connect()
-        if (conn.responseCode !in 200..299) {
-            error("HTTP ${conn.responseCode}")
-        }
+private fun installBundledModel(context: android.content.Context, target: File) {
+    if (target.exists() && target.length() > 100_000_000L) return
 
-        val total = conn.contentLengthLong
-        conn.inputStream.buffered().use { input ->
+    val tmp = File(target.parentFile, target.name + ".part")
+    try {
+        context.assets.open(BUNDLED_MODEL_ASSET).buffered().use { input ->
             tmp.outputStream().buffered().use { output ->
-                val buffer = ByteArray(1024 * 1024)
-                var read: Int
-                var done = 0L
-                while (input.read(buffer).also { read = it } >= 0) {
-                    if (read == 0) continue
-                    output.write(buffer, 0, read)
-                    done += read
-                    if (total > 0L) {
-                        onProgress(((done * 100L) / total).toInt().coerceIn(0, 100))
-                    }
-                }
+                input.copyTo(output, 1024 * 1024)
             }
         }
         if (target.exists()) target.delete()
@@ -80,8 +52,6 @@ private fun downloadModel(
     } catch (e: Exception) {
         tmp.delete()
         throw e
-    } finally {
-        conn?.disconnect()
     }
 }
 
@@ -92,46 +62,38 @@ fun AtharScreen() {
     val scope = rememberCoroutineScope()
     val engine = remember { AtharLocalEngine(context.applicationContext) }
     var message by remember { mutableStateOf("") }
-    var busy by remember { mutableStateOf(false) }
-    var progress by remember { mutableIntStateOf(0) }
-    var status by remember { mutableStateOf("Preparando ATHAR…") }
+    var busy by remember { mutableStateOf(true) }
+    var status by remember { mutableStateOf("Iniciando IA local…") }
     val messages = remember { mutableStateListOf<ChatLine>() }
 
     DisposableEffect(Unit) { onDispose { engine.destroy() } }
 
-    fun loadLocalModel(file: File) {
-        busy = true
-        status = "Cargando IA local…"
-        scope.launch(Dispatchers.IO) {
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) {
             try {
-                engine.loadModel(file)
+                val local = modelFile(context)
                 withContext(Dispatchers.Main) {
-                    status = "IA local lista • Qwen2.5 1.5B cargado en el teléfono"
+                    status = if (local.exists()) "Cargando cerebro de ATHAR…" else "Preparando cerebro integrado de ATHAR…"
+                }
+                installBundledModel(context, local)
+                engine.loadModel(local)
+                withContext(Dispatchers.Main) {
+                    status = "IA local lista • cerebro integrado activo"
                     busy = false
-                    progress = 100
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    status = "No pude cargar el modelo: " + (e.message ?: "error")
+                    status = "No pude iniciar el modelo integrado: " + (e.message ?: "error")
                     busy = false
                 }
             }
         }
     }
 
-    LaunchedEffect(Unit) {
-        val local = modelFile(context)
-        if (local.exists() && local.length() > 500_000_000L) {
-            loadLocalModel(local)
-        } else {
-            status = "ATHAR necesita descargar su modelo local (≈1,12 GB)"
-        }
-    }
-
     val modelPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             busy = true
-            status = "Copiando y cargando modelo local…"
+            status = "Cambiando modelo local…"
             scope.launch(Dispatchers.IO) {
                 try {
                     val model = modelFile(context)
@@ -140,7 +102,7 @@ fun AtharScreen() {
                     }
                     engine.loadModel(model)
                     withContext(Dispatchers.Main) {
-                        status = "IA local lista • modelo cargado en el teléfono"
+                        status = "IA local lista • modelo alternativo cargado"
                         busy = false
                     }
                 } catch (e: Exception) {
@@ -153,86 +115,41 @@ fun AtharScreen() {
         }
     }
 
-    Scaffold(topBar = { TopAppBar(title = { Text("ATHAR v0.4 • IA local real") }) }) { pad ->
+    Scaffold(topBar = { TopAppBar(title = { Text("ATHAR v0.4 • IA local integrada") }) }) { pad ->
         Column(Modifier.padding(pad).padding(16.dp).fillMaxSize()) {
             Text(status, style = MaterialTheme.typography.labelLarge)
             Text(
-                "El modelo se ejecuta en este dispositivo. Internet solo se usa para descargarlo y como herramienta aparte.",
+                "ATHAR funciona con su modelo de IA dentro de la propia aplicación. No necesita descargar un cerebro aparte.",
                 style = MaterialTheme.typography.bodySmall
             )
             Spacer(Modifier.height(8.dp))
 
-            if (!engine.isReady) {
-                Button(
-                    enabled = !busy,
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = {
-                        busy = true
-                        progress = 0
-                        status = "Descargando modelo local Qwen2.5 1.5B…"
-                        scope.launch(Dispatchers.IO) {
-                            try {
-                                val model = modelFile(context)
-                                downloadModel(model) { p ->
-                                    scope.launch(Dispatchers.Main) {
-                                        progress = p
-                                        status = "Descargando modelo local… $p%"
-                                    }
-                                }
-                                withContext(Dispatchers.Main) {
-                                    status = "Descarga completa • cargando IA local…"
-                                }
-                                engine.loadModel(model)
-                                withContext(Dispatchers.Main) {
-                                    status = "IA local lista • Qwen2.5 1.5B cargado"
-                                    progress = 100
-                                    busy = false
-                                }
-                            } catch (e: Exception) {
-                                withContext(Dispatchers.Main) {
-                                    status = "Error al descargar/cargar: " + (e.message ?: "error")
-                                    busy = false
-                                }
-                            }
-                        }
-                    }
-                ) { Text("Descargar cerebro de ATHAR (~1,12 GB)") }
-
-                if (busy && progress in 1..99) {
-                    Spacer(Modifier.height(8.dp))
-                    LinearProgressIndicator(progress = { progress / 100f }, modifier = Modifier.fillMaxWidth())
-                    Text("$progress%")
-                }
-
-                Spacer(Modifier.height(8.dp))
-                OutlinedButton(
-                    onClick = { modelPicker.launch(arrayOf("*/*")) },
-                    enabled = !busy,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Seleccionar GGUF manualmente")
-                }
-            } else {
-                OutlinedButton(
-                    onClick = { modelPicker.launch(arrayOf("*/*")) },
-                    enabled = !busy,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Cambiar modelo GGUF")
-                }
+            OutlinedButton(
+                onClick = { modelPicker.launch(arrayOf("*/*")) },
+                enabled = !busy,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Usar otro modelo GGUF (opcional)")
             }
 
             Spacer(Modifier.height(8.dp))
             LazyColumn(Modifier.weight(1f).fillMaxWidth()) {
                 items(messages) { Text("${it.author}: ${it.text}", Modifier.padding(vertical = 6.dp)) }
             }
-            if (busy && progress !in 1..99) Text("ATHAR está trabajando…")
+
+            if (busy) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(8.dp))
+                Text("ATHAR está preparando la IA local…")
+            }
+
             OutlinedTextField(
                 value = message,
                 onValueChange = { message = it },
                 label = { Text("Mensaje") },
                 modifier = Modifier.fillMaxWidth()
             )
+
             Button(
                 enabled = engine.isReady && !busy && message.isNotBlank(),
                 modifier = Modifier.fillMaxWidth(),
