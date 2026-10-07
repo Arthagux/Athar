@@ -1,0 +1,24 @@
+name: Publish ATHAR v0.4.3 APK
+on:
+  push:
+    branches: [main]
+permissions:
+  actions: read
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download verified APK artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p release-files
+          gh run download 37681329153             --repo Arthagux/Athar             --name ATHAR-v0.4.3-compact-complete             --dir release-files
+          ls -lh release-files
+          test -s release-files/ATHAR-v0.4.3-compact-complete.apk
+      - name: Publish direct APK release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v0.4.3             release-files/ATHAR-v0.4.3-compact-complete.apk             --repo Arthagux/Athar             --title "ATHAR v0.4.3"             --notes "ATHAR v0.4.3 completa con IA local integrada. Android 11+; ARM64."
