@@ -1,5 +1,5 @@
 name: Build ATHAR Android APK
-# local-ai build revision 12
+# local-ai build revision 13
 on:
   push:
     branches: [main]
@@ -36,6 +36,7 @@ jobs:
           s = s.replace("alias(libs.plugins.jetbrains.kotlin.android)", 'id("org.jetbrains.kotlin.android")')
           s = s.replace("minSdk = 33", "minSdk = 30")
           s = s.replace('abiFilters += listOf("arm64-v8a", "x86_64")', 'abiFilters += listOf("arm64-v8a")')
+          s = s.replace('arguments += "-DGGML_CPU_ALL_VARIANTS=ON"', 'arguments += "-DGGML_CPU_ALL_VARIANTS=OFF"')
           s = s.replace("implementation(libs.androidx.core.ktx)", 'implementation("androidx.core:core-ktx:1.17.0")')
           s = s.replace("implementation(libs.androidx.datastore.preferences)", 'implementation("androidx.datastore:datastore-preferences:1.1.7")')
           s = s.replace("testImplementation(libs.junit)", 'testImplementation("junit:junit:4.13.2")')
@@ -57,10 +58,12 @@ jobs:
         run: |
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging app/build/outputs/apk/debug/app-debug.apk | grep -E "package:|sdkVersion:|targetSdkVersion:|native-code:"
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs app/build/outputs/apk/debug/app-debug.apk
+          ls -lh app/build/outputs/apk/debug/app-debug.apk
+          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep -E "assets/athar-model.gguf|lib/arm64-v8a" | tail -30
       - name: Rename APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk ATHAR-v0.4.2-complete.apk
+        run: cp app/build/outputs/apk/debug/app-debug.apk ATHAR-v0.4.3-compact-complete.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: ATHAR-v0.4.2-complete
-          path: ATHAR-v0.4.2-complete.apk
+          name: ATHAR-v0.4.3-compact-complete
+          path: ATHAR-v0.4.3-compact-complete.apk
           if-no-files-found: error
