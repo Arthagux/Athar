@@ -7,22 +7,30 @@ permissions:
   contents: read
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Install native toolchain
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;29.0.13113456" "cmake;3.31.6"
+      - name: Get official llama.cpp Android runtime
+        run: |
+          mkdir -p vendor
+          git clone --depth 1 https://github.com/ggml-org/llama.cpp.git vendor/llama.cpp
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: "8.9"
-      - name: Build APK
+          gradle-version: "8.14.3"
+      - name: Build APK with on-device llama.cpp
         run: gradle :app:assembleDebug --stacktrace
       - name: Rename APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk ATHAR-v0.1.apk
+        run: cp app/build/outputs/apk/debug/app-debug.apk ATHAR-v0.3-local-ai.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: ATHAR-v0.1
-          path: ATHAR-v0.1.apk
+          name: ATHAR-v0.3-local-ai
+          path: ATHAR-v0.3-local-ai.apk
           if-no-files-found: error
