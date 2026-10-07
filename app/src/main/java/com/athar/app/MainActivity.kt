@@ -10,9 +10,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import java.net.HttpURLConnection
-import java.net.URL
-import kotlin.concurrent.thread
+
+data class ChatLine(val author: String, val text: String)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -24,24 +23,26 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AtharScreen() {
-    var ip by remember { mutableStateOf("192.168.1.2") }
     var message by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
-    val messages = remember { mutableStateListOf<String>() }
+    val messages = remember { mutableStateListOf<ChatLine>() }
+    val engine = remember { AtharLocalEngine() }
 
-    Scaffold(topBar = { TopAppBar(title = { Text("ATHAR v0.1") }) }) { pad ->
+    Scaffold(topBar = { TopAppBar(title = { Text("ATHAR v0.2 • IA local") }) }) { pad ->
         Column(Modifier.padding(pad).padding(16.dp).fillMaxSize()) {
-            OutlinedTextField(
-                value = ip,
-                onValueChange = { ip = it },
-                label = { Text("IP del PC") },
-                modifier = Modifier.fillMaxWidth()
+            Text(
+                if (engine.isReady) "Motor local listo" else "Preparando motor local…",
+                style = MaterialTheme.typography.labelLarge
+            )
+            Text(
+                "Internet se usa solo como herramienta para información externa.",
+                style = MaterialTheme.typography.bodySmall
             )
             Spacer(Modifier.height(8.dp))
             LazyColumn(Modifier.weight(1f).fillMaxWidth()) {
-                items(messages) { Text(it, Modifier.padding(vertical = 6.dp)) }
+                items(messages) { Text("${it.author}: ${it.text}", Modifier.padding(vertical = 6.dp)) }
             }
-            if (busy) Text("ATHAR está pensando...")
+            if (busy) Text("ATHAR está pensando…")
             OutlinedTextField(
                 value = message,
                 onValueChange = { message = it },
@@ -49,40 +50,21 @@ fun AtharScreen() {
                 modifier = Modifier.fillMaxWidth()
             )
             Button(
-                enabled = !busy && message.isNotBlank(),
+                enabled = !busy && message.isNotBlank() && engine.isReady,
                 modifier = Modifier.fillMaxWidth(),
                 onClick = {
                     val sent = message.trim()
                     message = ""
-                    messages.add("Tú: $sent")
+                    messages.add(ChatLine("Tú", sent))
                     busy = true
-                    thread {
-                        val result = sendToAthar(ip, sent)
-                        messages.add("ATHAR: $result")
-                        busy = false
+                    engine.generate(sent) { answer ->
+                        runOnUiThread {
+                            messages.add(ChatLine("ATHAR", answer))
+                            busy = false
+                        }
                     }
                 }
             ) { Text("Enviar") }
         }
     }
-}
-
-private fun sendToAthar(ip: String, text: String): String = try {
-    val c = URL("http://$ip:8765/chat").openConnection() as HttpURLConnection
-    c.requestMethod = "POST"
-    c.connectTimeout = 10000
-    c.readTimeout = 120000
-    c.doOutput = true
-    c.setRequestProperty("Content-Type", "application/json")
-    val safe = text
-        .replace("\\", "\\\\")
-        .replace("\"", "\\\"")
-        .replace("\n", "\\n")
-    c.outputStream.use {
-        it.write("{\"message\":\"$safe\"}".toByteArray())
-    }
-    val stream = if (c.responseCode in 200..299) c.inputStream else c.errorStream
-    stream.bufferedReader().use { it.readText() }
-} catch (e: Exception) {
-    "No pude conectar con ATHAR Core: " + (e.message ?: "error de red")
 }
