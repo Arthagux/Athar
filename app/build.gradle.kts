@@ -8,10 +8,10 @@ android {
     compileSdk = 36
     defaultConfig {
         applicationId = "com.athar.app"
-        minSdk = 33
+        minSdk = 30
         targetSdk = 36
-        versionCode = 2
-        versionName = "0.3"
+        versionCode = 3
+        versionName = "0.3.1"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
