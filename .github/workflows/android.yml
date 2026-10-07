@@ -1,5 +1,5 @@
 name: Build ATHAR Android APK
-# local-ai build revision 7
+# local-ai build revision 8
 on:
   push:
     branches: [main]
@@ -49,12 +49,12 @@ jobs:
         run: gradle :app:assembleDebug --stacktrace
       - name: Verify Android 11 APK
         run: |
-          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging app/build/outputs/apk/debug/app-debug.apk | grep -E "package:|sdkVersion:|native-code:"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging app/build/outputs/apk/debug/app-debug.apk | grep -E "package:|sdkVersion:|targetSdkVersion:|native-code:"
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs app/build/outputs/apk/debug/app-debug.apk
       - name: Rename APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk ATHAR-v0.3.2-android11-arm64.apk
+        run: cp app/build/outputs/apk/debug/app-debug.apk ATHAR-v0.3.3-android11-miui.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: ATHAR-v0.3.2-android11-arm64
+          name: ATHAR-v0.3.3-android11-miui
           path: ATHAR-v0.3.2-android11-arm64.apk
           if-no-files-found: error
