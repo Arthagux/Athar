@@ -13,19 +13,6 @@ android {
         versionCode = 4
         versionName = "0.3.2"
     }
-    signingConfigs {
-        create("atharDev") {
-            storeFile = file("${rootProject.projectDir}/keystore/athar-dev.jks")
-            storePassword = "athardev2026"
-            keyAlias = "athar"
-            keyPassword = "athardev2026"
-        }
-    }
-    buildTypes {
-        getByName("debug") {
-            signingConfig = signingConfigs.getByName("atharDev")
-        }
-    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
