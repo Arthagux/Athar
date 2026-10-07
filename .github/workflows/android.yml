@@ -33,6 +33,7 @@ jobs:
           s = p.read_text()
           s = s.replace("alias(libs.plugins.android.library)", 'id("com.android.library")')
           s = s.replace("alias(libs.plugins.jetbrains.kotlin.android)", 'id("org.jetbrains.kotlin.android")')
+          s = s.replace("minSdk = 33", "minSdk = 30")
           s = s.replace("implementation(libs.androidx.core.ktx)", 'implementation("androidx.core:core-ktx:1.17.0")')
           s = s.replace("implementation(libs.androidx.datastore.preferences)", 'implementation("androidx.datastore:datastore-preferences:1.1.7")')
           s = s.replace("testImplementation(libs.junit)", 'testImplementation("junit:junit:4.13.2")')
