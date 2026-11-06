@@ -31,6 +31,7 @@ jobs:
           curl --retry 4 --fail --location --show-error --output /tmp/radar-source.zip "https://bc271775-a72d-49cf-8288-451773dbf01b.sandbox.floot.app/_cdn/static/bfe2f8dd-1e11-44f6-9254-d57993408577-radar-silueta-source.zip"
           test "$(stat -c %s /tmp/radar-source.zip)" -gt 10000
           unzip -q /tmp/radar-source.zip -d RadarSilueta
+          sed -i 's/compileSdk = 35/compileSdk = 36/' RadarSilueta/app/build.gradle.kts
       - name: Compilar APK
         working-directory: RadarSilueta
         run: gradle :app:assembleDebug --stacktrace --no-daemon
