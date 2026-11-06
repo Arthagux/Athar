@@ -1,0 +1,40 @@
+name: RADAR SILUETA - Compilar APK
+on:
+  push:
+    branches:
+      - radar-silueta-apk-build-20261106
+  workflow_dispatch:
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Preparar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Preparar Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Instalar plataforma Android
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Instalar Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Descargar proyecto Radar Silueta
+        run: |
+          mkdir -p RadarSilueta
+          curl --retry 4 --fail --location --show-error --output /tmp/radar-source.zip "https://bc271775-a72d-49cf-8288-451773dbf01b.sandbox.floot.app/_cdn/static/bfe2f8dd-1e11-44f6-9254-d57993408577-radar-silueta-source.zip"
+          test "$(stat -c %s /tmp/radar-source.zip)" -gt 10000
+          unzip -q /tmp/radar-source.zip -d RadarSilueta
+      - name: Compilar APK
+        working-directory: RadarSilueta
+        run: gradle :app:assembleDebug --stacktrace --no-daemon
+      - name: Subir APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: RADAR-SILUETA-Android-APK
+          path: RadarSilueta/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
