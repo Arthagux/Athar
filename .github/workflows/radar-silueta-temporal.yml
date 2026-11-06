@@ -1,8 +1,8 @@
-name: RADAR SILUETA - Compilar APK
+name: RADAR SILUETA FLUIDO v0.2.0 - APK
 on:
   push:
     branches:
-      - radar-silueta-apk-build-20261106
+      - radar-silueta-fluido-v020-20261106
   workflow_dispatch:
 jobs:
   apk:
@@ -10,34 +10,32 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Preparar Java 17
+      - name: Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-      - name: Comprobar SDK preinstalado
-        run: |
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          find "$ANDROID_HOME" -maxdepth 4 -name sdkmanager -o -name android.jar | head -30 || true
-          ls "$ANDROID_HOME"/platforms/ || true
-          ls "$ANDROID_HOME"/build-tools/ || true
-      - name: Instalar Gradle
+      - name: Gradle 8.13
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.13'
-      - name: Descargar proyecto Radar Silueta
+      - name: Descargar codigo completo v0.2.0
         run: |
-          mkdir -p RadarSilueta
-          curl --retry 4 --fail --location --show-error --output /tmp/radar-source.zip "https://bc271775-a72d-49cf-8288-451773dbf01b.sandbox.floot.app/_cdn/static/bfe2f8dd-1e11-44f6-9254-d57993408577-radar-silueta-source.zip"
-          test "$(stat -c %s /tmp/radar-source.zip)" -gt 10000
-          unzip -q /tmp/radar-source.zip -d RadarSilueta
-          sed -i 's/compileSdk = 35/compileSdk = 36/' RadarSilueta/app/build.gradle.kts
+          mkdir -p /tmp/radar
+          curl --retry 4 --fail --location --show-error --output /tmp/radar-source.zip "https://bc271775-a72d-49cf-8288-451773dbf01b.sandbox.floot.app/_cdn/static/7cdab139-5ed8-4db4-8363-403cb0a66dbe-radar-silueta-fluido-v0.2.0-source.zip"
+          test "$(stat -c %s /tmp/radar-source.zip)" -gt 15000
+          unzip -q /tmp/radar-source.zip -d /tmp/radar
+          test -f /tmp/radar/Radar-Silueta-v0.2.0/app/build.gradle.kts
       - name: Compilar APK
-        working-directory: RadarSilueta
+        working-directory: /tmp/radar/Radar-Silueta-v0.2.0
         run: gradle :app:assembleDebug --stacktrace --no-daemon
+      - name: Confirmar APK y firma de depuracion
+        run: |
+          test -s /tmp/radar/Radar-Silueta-v0.2.0/app/build/outputs/apk/debug/app-debug.apk
+          du -h /tmp/radar/Radar-Silueta-v0.2.0/app/build/outputs/apk/debug/app-debug.apk
       - name: Subir APK
         uses: actions/upload-artifact@v4
         with:
-          name: RADAR-SILUETA-Android-APK
-          path: RadarSilueta/app/build/outputs/apk/debug/app-debug.apk
+          name: RADAR-SILUETA-FLUIDO-v0.2.0-APK
+          path: /tmp/radar/Radar-Silueta-v0.2.0/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
