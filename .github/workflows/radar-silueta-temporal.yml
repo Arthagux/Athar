@@ -15,11 +15,12 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Preparar Android SDK sin setup-android obsoleto
+      - name: Comprobar SDK preinstalado
         run: |
           echo "ANDROID_HOME=$ANDROID_HOME"
-          yes | "$ANDROID_HOME/cmdline-tools/16.0/bin/sdkmanager" --licenses >/dev/null || true
-          "$ANDROID_HOME/cmdline-tools/16.0/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+          find "$ANDROID_HOME" -maxdepth 4 -name sdkmanager -o -name android.jar | head -30 || true
+          ls "$ANDROID_HOME"/platforms/ || true
+          ls "$ANDROID_HOME"/build-tools/ || true
       - name: Instalar Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
